@@ -492,12 +492,22 @@ public final class ChunkRegionLoader {
 
         // Block entities
         final ListTag blockEntitiesNBT = new ListTag();
-        for (final BlockPos blockPos : chunk.getBlockEntitiesPos()) {
-            final CompoundTag blockEntity = chunk.getBlockEntityNbtForSaving(blockPos, world.registryAccess());
-            if (blockEntity != null) {
-                blockEntitiesNBT.add(blockEntity);
+        
+        synchronized (chunk) {
+            final Collection<BlockPos> blockEntityPositions = chunk.getBlockEntitiesPos();
+        
+            if (blockEntityPositions != null) {
+                for (final BlockPos blockPos : blockEntityPositions) {
+                    if (chunk.getBlockEntity(blockPos) != null) {
+                        final CompoundTag blockEntity = chunk.getBlockEntityNbtForSaving(blockPos, world.registryAccess());
+                        if (blockEntity != null) {
+                            blockEntitiesNBT.add(blockEntity);
+                        }
+                    }
+                }
             }
         }
+        
         nbt.put("block_entities", blockEntitiesNBT);
 
         if (chunk.getPersistedStatus().getChunkType() == ChunkType.PROTOCHUNK) { // Not Generated yet, ignore it
